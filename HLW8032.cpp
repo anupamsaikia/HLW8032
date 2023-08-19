@@ -166,10 +166,10 @@ uint32_t HLW8032::GetPFAll()
 // 获取累积电量
 float HLW8032::GetKWh()
 {
-	/* float InspectingPower = GetInspectingPower(); //视在功率
-	uint32_t PFcnt = (1/PowerPar) *(1/InspectingPower) * 1000000000 * 3600;   //一度电的脉冲数量
-	float KWh = (PFData * PF) / PFcnt;  //总脉冲除以1度电的脉冲量 */
-	float KWh = GetPFAll() / (3600000000000 / PowerPar / 1.88);
+	float InspectingPower = GetInspectingPower();								 // 视在功率
+	uint32_t PFcnt = (1 / PowerPar) * (1 / InspectingPower) * 1000000000 * 3600; // 一度电的脉冲数量
+	float KWh = (PFData * PF) / PFcnt;											 // 总脉冲除以1度电的脉冲量
+	// float KWh = GetPFAll() / (3600000000000 / PowerPar / 1.88);
 	return KWh;
 }
 
