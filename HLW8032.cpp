@@ -15,7 +15,7 @@ void HLW8032::begin(HardwareSerial &SerialData, byte IO)
 	// while(SerialID->read()>= 0){}
 	digitalWrite(_IO, HIGH);
 
-	VF = VolR1 / VolR2;				 // 求电压系数
+	VF = VolR1 / (VolR2 * 1000.0);	 // 求电压系数
 	CF = 1.0 / (CurrentRF * 1000.0); // 计算电流系数
 }
 
@@ -66,6 +66,15 @@ void HLW8032::SerialReadLoop()
 			// Serial.println("crc error");
 			return;
 		}
+
+		//  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23
+		// F2 5A 02 F7 60 00 03 61 00 40 10 05 72 40 51 A6 58 63 10 1B E1 7F 4D 4E - F2 = Power cycle exceeds range - takes too long - No load
+		// 55 5A 02 F7 60 00 03 5A 00 40 10 04 8B 9F 51 A6 58 18 72 75 61 AC A1 30 - 55 = Ok, 61 = Power not valid (load below 5W)
+		// 55 5A 02 F7 60 00 03 AB 00 40 10 02 60 5D 51 A6 58 03 E9 EF 71 0B 7A 36 - 55 = Ok, 71 = Ok
+
+		// 55 5A 02 DB 40 00 03 25 00 3D 18 03 8E CD 4F 0A 60 2A 56 85 61 01 02 1A - OK voltage
+		// 55 5A 02 DB 40 07 17 1D 00 3D 18 03 8E CD 4F 0A 60 2B EF EA 61 01 02 2C - Wrong voltage
+		// Hd Id VCal---- Voltage- ICal---- Current- PCal---- Power--- Ad CF--- Ck
 
 		// 如果通过了以上测试，则说明数据包应该没问题，获取其中的数据
 		SerialRead = 1;																				  // 数据包完备标记
@@ -128,11 +137,22 @@ float HLW8032::GetCurrentAnalog()
 // 计算有功功率
 float HLW8032::GetActivePower()
 {
-	float FPowerPar = PowerPar;
-	float FPowerData = PowerData;
-	// float Power = ((float)PowerPar/(float)PowerData) * VF * CF;  // 求有功功率
-	float Power = FPowerPar / FPowerData * VF * CF; // 求有功功率
-	return Power;
+	if ((SerialTemps[20] & 0x10))
+	{ // Power valid
+		if ((SerialTemps[0] & 0xF2) == 0xF2)
+		{ // Power cycle exceeds range
+			return 0;
+		}
+		else
+		{
+			float FPowerPar = PowerPar;
+			float FPowerData = PowerData;
+			// float Power = ((float)PowerPar/(float)PowerData) * VF * CF;  // 求有功功率
+			float Power = (FPowerPar / FPowerData) * VF * CF; // 求有功功率
+			return Power;
+		}
+	}
+	return 0;
 }
 
 // 计算视在功率
@@ -160,16 +180,23 @@ uint16_t HLW8032::GetPF()
 // 获取总脉冲数
 uint32_t HLW8032::GetPFAll()
 {
-	return PFData * PF;
+	return (PFData * 65536) + PF;
 }
 
 // 获取累积电量
 float HLW8032::GetKWh()
 {
-	float InspectingPower = GetInspectingPower();								 // 视在功率
-	uint32_t PFcnt = (1 / PowerPar) * (1 / InspectingPower) * 1000000000 * 3600; // 一度电的脉冲数量
-	float KWh = (PFData * PF) / PFcnt;											 // 总脉冲除以1度电的脉冲量
-	// float KWh = GetPFAll() / (3600000000000 / PowerPar / 1.88);
+	// Serial.printf("Powerpar: %u %lu \n", PowerPar, PowerPar);
+	float PFcnt = (1.0 / PowerPar) * (1.0 / (CF * VF)) * 1000000000.0 * 3600.0; // 一度电的脉冲数量
+
+	// Serial.printf("PFcnt: %f\n", PFcnt);
+	// Serial.printf("GetPFAll(): %u %lu\n", GetPFAll(), GetPFAll());
+
+	if (PFcnt == 0)
+	{
+		return 0;
+	}
+	float KWh = GetPFAll() / PFcnt; // 总脉冲除以1度电的脉冲量
 	return KWh;
 }
 

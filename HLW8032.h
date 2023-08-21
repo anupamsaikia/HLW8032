@@ -30,12 +30,12 @@ public:
 	byte SeriaDataLen = 0; // 数据长度计数器
 	bool SerialRead = 0;   // 串口数据OK标记
 
-	uint32_t VolPar;	  // 电压参数
-	uint32_t CurrentPar;  // 电流参数
-	uint32_t PowerPar;	  // 功率参数
-	uint32_t CurrentData; // 电流数据
-	float VF;			  // 电压系数
-	float CF;			  // 电流系数
+	uint32_t VolPar = 0;	  // 电压参数
+	uint32_t CurrentPar = 0;  // 电流参数
+	uint32_t PowerPar = 0;	  // 功率参数
+	uint32_t CurrentData = 0; // 电流数据
+	float VF;				  // 电压系数
+	float CF;				  // 电流系数
 
 private:
 	bool Checksum(); // 校验函数
@@ -44,11 +44,11 @@ private:
 	HardwareSerial *SerialID;
 	uint8_t SysStatus; // 系统状态寄存器
 
-	uint32_t VolData; // 电压数据
+	uint32_t VolData = 0; // 电压数据
 
-	uint32_t PowerData;		  // 功率数据
-	uint16_t PF;			  // 脉冲计数器
-	uint32_t PFData = 1;	  // 脉冲溢出计数器
+	uint32_t PowerData = 0;	  // 功率数据
+	uint16_t PF = 0;		  // 脉冲计数器
+	uint32_t PFData = 0;	  // 脉冲溢出计数器
 	uint32_t VolR1 = 1880000; // 电压电阻1 470K*4  1880K
 	uint32_t VolR2 = 1000;	  // 电压电阻2  1K
 	float CurrentRF = 0.001;  // 电流采样电阻 0.1 欧姆
